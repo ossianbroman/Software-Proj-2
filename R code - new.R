@@ -46,7 +46,7 @@ lmBoot <- function(inputData, nBoot) {
   bootResults
 }
 
-system.time(test <- lmBoot(regData, nBoot = 10000))
+system.time(test <- lmBoot(regData, nBoot = 100000))
 
 ##############
 
@@ -71,7 +71,74 @@ clusterEvalQ(myClust, dataSum <- sum(fitness))
 dataSum <- clusterEvalQ(myClust, sum(fitness))
 dataSum
 
-###############
+################ Carls improved code
+
+lmBoot1 <- function(inputData, nBoot) {
+  
+  x <- cbind(1, scale(inputData$x, scale = F))
+  y <- scale(inputData$y, scale = F)
+  scaleData <- as.matrix(cbind(x, y))
+  
+  bootResults <- array(dim=c(nBoot, 2))
+  
+  for(i in 1:nBoot){
+    
+    # resample our data with replacement
+    bootData <- scaleData[sample(1:nrow(inputData), nrow(inputData), replace = T),]
+    xmat <- bootData[,1:2]
+    ymat <- bootData[,3]
+    
+    # fit the model under this alternative reality
+    # Changed the lm part to matrix form
+    
+    beta <- solve(t(xmat) %*% xmat) %*% t(xmat) %*% ymat
+    
+    bootResults[i,] <- beta
+    
+  } # end of i loop
+  
+  bootResults
+  
+}
+
+system.time(lmBoot1(regData, nBoot = 100000))
+
+
+################## Using foreach
+
+library('foreach')
+
+lmBoot2 <- function(inputData, nBoot) {
+  
+  x <- cbind(1, scale(inputData$x, scale = F))
+  y <- scale(inputData$y, scale = F)
+  scaleData <- as.matrix(cbind(x, y))
+  
+  bootResults <- array(dim=c(nBoot, 2))
+  
+  foreach(i = 1:nBoot)  %dopar% {
+    
+    # resample our data with replacement
+    bootData <- scaleData[sample(1:nrow(inputData), nrow(inputData), replace = T),]
+    xmat <- bootData[,1:2]
+    ymat <- bootData[,3]
+    
+    # fit the model under this alternative reality
+    # Changed the lm part to matrix form
+    
+    beta <- solve(t(xmat) %*% xmat) %*% t(xmat) %*% ymat
+    
+    bootResults[i,] <- beta
+    
+  } # end of i loop
+  
+  bootResults
+  
+}
+
+system.time(lmBoot2(regData, nBoot = 100000))
+
+################# Efficient
 
 parBadBoot <- function( index, scaleData, N )
 {
@@ -109,133 +176,12 @@ bestBadBootBrother <- function( inputData, nBoot )
   return( m ) 
 }
 
-system.time( test2 <- bestBadBootBrother( inputData = regData, 10000 ) )
-
-################
-
-lmBoot1 <- function(inputData, nBoot) {
-  
-  x <- cbind(1, scale(inputData$x, scale = F))
-  y <- scale(inputData$y, scale = F)
-  scaleData <- as.matrix(cbind(x, y))
-  
-  bootResults <- array(dim=c(nBoot, 2))
-  
-  for(i in 1:nBoot){
-    
-    # resample our data with replacement
-    bootData <- scaleData[sample(1:nrow(inputData), nrow(inputData), replace = T),]
-    xmat <- bootData[,1:2]
-    ymat <- bootData[,3]
-    
-    # fit the model under this alternative reality
-    # Changed the lm part to matrix form
-    
-    beta <- solve(t(xmat) %*% xmat) %*% t(xmat) %*% ymat
-    
-    bootResults[i,] <- beta
-    
-  } # end of i loop
-  
-  bootResults
-  
-}
-
-system.time(lmBoot1(regData, nBoot = 10000))
+system.time( test2 <- bestBadBootBrother( inputData = regData, 100000 ) )
 
 ##################
 
-library('foreach')
-
-lmBoot2 <- function(inputData, nBoot) {
-  
-  x <- cbind(1, scale(inputData$x, scale = F))
-  y <- scale(inputData$y, scale = F)
-  scaleData <- as.matrix(cbind(x, y))
-  
-  bootResults <- array(dim=c(nBoot, 2))
-  
-  foreach(i = 1:nBoot)  %dopar% {
-    
-    # resample our data with replacement
-    bootData <- scaleData[sample(1:nrow(inputData), nrow(inputData), replace = T),]
-    xmat <- bootData[,1:2]
-    ymat <- bootData[,3]
-    
-    # fit the model under this alternative reality
-    # Changed the lm part to matrix form
-    
-    beta <- solve(t(xmat) %*% xmat) %*% t(xmat) %*% ymat
-    
-    bootResults[i,] <- beta
-    
-  } # end of i loop
-  
-  bootResults
-  
-}
-
-system.time(lmBoot2(regData, nBoot = 1000))
-
-##################
-
-library('profvis')
-
-profvis({
-  data(fitness, package = "ggplot2")
-  
-  plot(Age ~ Oxygen, data = fitness)
-  m <- lm(Age ~ Oxygen, data = fitness)
-  abline(m, col = "red")
-})
-
-# using lapply
-
-clusterEvalQ(myClust, library('profvis'))
 
 
-
-sumSeq <- function(reps) { sum( 1:reps) }
-anOutputList <- lapply(1:4, sumSeq)
-do.call('c', anOutputList)
-
-bootLM <- function(inputData, nBoot) {
-  
-  dataDim <- nrow(fitness)
-  
-  bootData <- data[sample(1:dataDim, dataDim, replace = T),]
-  
-  bootLM <- lm(y ~ x, data = bootData)
-  
-  coef(bootLM)
-  
-}
-
-system.time(sumSeq(reps = 10)) 
-
-
-
-set.seed(180016660)
-x <- fitness$Age
-y <- fitness$Oxygen
-contrivedData <- data.frame(x, y)
-
-bootLM(1, contrivedData)
-
-system.time(lmBoot1 <- foreach(n=1:100) %dopar% parlmBoot1(1000))
-
-
-
-# Profiling
-Rprof("~/Desktop/5763- A2/Software-Proj-2")
-
-profvis(lmBoot(1000))
-
-
-
-system.time( {
-  results <- mclapply(lmBoot1, mc.cores = nCores)
-})
 
 
 
