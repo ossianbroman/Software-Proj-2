@@ -59,7 +59,7 @@ detectCores()
 nCores <- detectCores()
 nCores
 
-myClust <- makeCluster(nCores-1, type = "FORK")
+myClust <- makeCluster(nCores-1, type = "PSOCK")
 
 clusterEvalQ(myClust, library(boot))
 
@@ -154,8 +154,12 @@ parBadBoot <- function( index, scaleData, N )
 
 # final bootstrap function that utilises parLapply function to speed
 # up process
+
 bestBadBootBrother <- function( inputData, nBoot )
 {
+  library(parallel)
+  nCores <- detectCores()
+  myClust <- makeCluster(nCores-1, type = "FORK")
   x <- cbind( 1, scale( inputData$x, scale = F ) )
   y <- scale( inputData$y, scale = F )
   scaleData <- as.matrix( cbind( x, y ) )
@@ -193,22 +197,29 @@ parBadBootAnyCovars <- function( index, scaleData, N )
   bootResults <- beta
 }
 
-bestBadBootBrotherAnyCovars <- function( nBoot, yDat, ... ) 
+bestBadBootBrotherAnyCovars1 <- function( nBoot, yDat, ... ) 
 {
+  library(parallel)
+  nCores <- detectCores()
+  myClust <- makeCluster(nCores-1, type = "FORK")
+  
   xDat <- list(...)
   x <- cbind(1, scale(xDat[[1]], scale = F))
   if(length(xDat) > 1) {
     for(i in 2:length(xDat)) {
-      x <- cbind(x, scale(xDat[[i]], scale = F))
+       x <- cbind(x, scale(xDat[[i]], scale = F))
     }
   }
+  
   y <- scale( yDat, scale = F )
-  scaleData <- as.matrix( cbind( x, y ) )
+
+  scaleData <- cbind( x, y )
+
   bootResults <- array( dim = c( nBoot, 2 ) )
   
   N <- length( yDat ) 
   
-  tempbootResults <- parLapply( myClust, 1:nBoot, parBadBoot, 
+  tempbootResults <- parLapply( myClust, 1:nBoot, parBadBootAnyCovars, 
                                 scaleData = scaleData, N = N ) 
   
   bootResults <- tempbootResults 
@@ -220,11 +231,85 @@ bestBadBootBrotherAnyCovars <- function( nBoot, yDat, ... )
   return( m ) 
 }
 
-system.time( test3 <- bestBadBootBrotherAnyCovars( 100, regData$y, regData$x ) )
+# want to change the for loop on xDat into something faster and more dynamic
+# consider the two approaches below
+
+bestBadBootBrotherAnyCovars2 <- function( nBoot, yDat, ... ) 
+{
+  library(parallel)
+  nCores <- detectCores()
+  myClust <- makeCluster(nCores-1, type = "FORK")
+  
+  xDat <- list(...)
+
+  mdata <- unlist(xDat)
+  mcol <- length(xDat)
+  mrow <- length( mdata ) / mcol
+   
+  baseone <- rep( 1 , mrow)
+   
+  mnew <- matrix( data = c(mdata, yDat), nrow = mrow, ncol = mcol+1)
+  mscale <- scale( mnew, scale = F )
+  scaleData <- matrix( data = c( baseone, mscale ), nrow = mrow, ncol = mcol + 2 )
+  
+  bootResults <- array( dim = c( nBoot, 2 ) )
+  
+  N <- length( yDat ) 
+  
+  tempbootResults <- parLapply( myClust, 1:nBoot, parBadBootAnyCovars, 
+                                scaleData = scaleData, N = N ) 
+  
+  bootResults <- tempbootResults 
+  
+  r <- bootResults[[1]]
+  c <- bootResults[[2]]
+  m <- matrix( c( r, c ), ncol = 2, nrow = N )
+  
+  return( m ) 
+}
+
+bestBadBootBrotherAnyCovars3 <- function( nBoot, yDat, ... ) 
+{
+  library(parallel)
+  nCores <- detectCores()
+  myClust <- makeCluster(nCores-1, type = "FORK")
+  
+  xDat <- list(...)
+  x <- cbind(1, scale(do.call(cbind, xDat), scale =F ))
+  y <- scale( yDat, scale = F )
+
+  scaleData <- cbind( x, y )
+  
+  bootResults <- array( dim = c( nBoot, 2 ) )
+  
+  N <- length( yDat ) 
+  
+  tempbootResults <- parLapply( myClust, 1:nBoot, parBadBootAnyCovars, 
+                                scaleData = scaleData, N = N ) 
+  
+  bootResults <- tempbootResults 
+  
+  r <- bootResults[[1]]
+  c <- bootResults[[2]]
+  m <- matrix( c( r, c ), ncol = 2, nrow = N )
+  
+  return( m ) 
+}
+
+## Testing for 1 as well as more x covariate -> version 2 and 3 seems fastest, rerun multiple times, no definite best
+# for 1 x -> version 3, for multiple x -> version 2
+system.time( test3 <- bestBadBootBrotherAnyCovars1( 100000, regData$y, regData$x) )
+system.time( test3 <- bestBadBootBrotherAnyCovars2( 100000, regData$y, regData$x) )
+system.time( test3 <- bestBadBootBrotherAnyCovars3( 100000, regData$y, regData$x) )
+
+system.time( test3 <- bestBadBootBrotherAnyCovars1( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
+system.time( test3 <- bestBadBootBrotherAnyCovars2( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
+system.time( test3 <- bestBadBootBrotherAnyCovars3( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
+
 
 # Compare our bootstrap to initial via microbenchmark
 library(microbenchmark)
-microbenchmark(lmBoot(regData, 100), bestBadBootBrotherAnyCovars( 100, regData$y, regData$x))
+microbenchmark(lmBoot(regData, 100), bestBadBootBrotherAnyCovars3( 100, regData$y, regData$x))
 
 
 
