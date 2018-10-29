@@ -10,7 +10,7 @@
 
 # Import the data
 fitness <- read.csv("~/Desktop/5763- A2/Software-Proj-2/data/fitness.csv")
-
+set.seed(1435)
 # Load the package
 library(boot)
 
@@ -297,7 +297,7 @@ bestBadBootBrotherAnyCovars3 <- function( nBoot, yDat, ... )
 }
 
 ## Testing for 1 as well as more x covariate -> version 2 and 3 seems fastest, rerun multiple times, no definite best
-# for 1 x -> version 3, for multiple x -> version 2
+# depends on seed
 system.time( test3 <- bestBadBootBrotherAnyCovars1( 100000, regData$y, regData$x) )
 system.time( test3 <- bestBadBootBrotherAnyCovars2( 100000, regData$y, regData$x) )
 system.time( test3 <- bestBadBootBrotherAnyCovars3( 100000, regData$y, regData$x) )
