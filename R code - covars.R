@@ -298,7 +298,7 @@ oneBootToRuleThemAll <- function( nBoot, yDat, ... )
   N <- length( yDat ) 
   
   # pass scaled data to helper function to bootstrap
-  tempbootResults <- parLapply( myClust, 1:nBoot, parBadBootAnyCovars, 
+  tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
                                 scaleData = scaleData, N = N ) 
   # save all bootstap data into matrix and output
   m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1, nrow = N )
@@ -323,7 +323,7 @@ system.time( test9 <- oneBootToRuleThemAll( 100000, regData$y, regData$x, sample
 
 # Compare our efficient bootstrap to initial via microbenchmark
 library(microbenchmark)
-microbenchmark(lmBoot(regData, 100), oneBootToRuleThemAll( 100, regData$y, regData$x))
+microbenchmark(lmBoot(regData, 100), bestBootCovars1( 100, regData$y, regData$x), oneBootToRuleThemAll( 100, regData$y, regData$x))
 
 
 
