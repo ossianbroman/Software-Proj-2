@@ -11,17 +11,18 @@
 # Import the data
 fitness <- read.csv("~/Desktop/5763- A2/Software-Proj-2/data/fitness.csv")
 set.seed(1435)
+
 # Load the package
-library(boot)
+install.packages("boot")
+library("boot")
 
 # Create data and set seed to ensure results are reproducible
 x <- fitness$Age
 y <- fitness$Oxygen
 regData <- data.frame(x, y)
 
-################
-
 # Carls function to pass boot
+
 lmBoot <- function(inputData, nBoot) {
   
   for(i in 1:nBoot){
@@ -48,18 +49,16 @@ lmBoot <- function(inputData, nBoot) {
 
 system.time(test <- lmBoot(regData, nBoot = 100000))
 
-##############
-
 # Parallelising
 
-library(parallel)
+library("parallel")
 
 detectCores()
 
 nCores <- detectCores()
 nCores
 
-myClust <- makeCluster(nCores-1, type = "PSOCK")
+myClust <- makeCluster(nCores-1, type = "FORK")
 
 clusterEvalQ(myClust, library(boot))
 
@@ -71,7 +70,7 @@ clusterEvalQ(myClust, dataSum <- sum(fitness))
 dataSum <- clusterEvalQ(myClust, sum(fitness))
 dataSum
 
-################ Carls improved code
+# Carls improved code
 
 lmBoot1 <- function(inputData, nBoot) {
   
@@ -104,9 +103,9 @@ lmBoot1 <- function(inputData, nBoot) {
 system.time(lmBoot1(regData, nBoot = 100000))
 
 
-################## Using foreach
-
-library('foreach')
+# Using foreach
+install.packages("foreach")
+library("foreach")
 
 lmBoot2 <- function(inputData, nBoot) {
   
@@ -138,7 +137,7 @@ lmBoot2 <- function(inputData, nBoot) {
 
 system.time(lmBoot2(regData, nBoot = 100000))
 
-################# Efficient
+# Make the function more efficient 
 
 parBadBoot <- function( index, scaleData, N )
 {
@@ -148,12 +147,12 @@ parBadBoot <- function( index, scaleData, N )
   
   # fit the model under this alternative reality
   # Changed the lm part to matrix form
+  
   beta <- solve( t( Xmat ) %*% Xmat ) %*% t( Xmat ) %*% Ymat
   bootResults <- beta
 }
 
-# final bootstrap function that utilises parLapply function to speed
-# up process
+# Final bootstrap function that utilises parLapply function to speed up the process
 
 bestBadBootBrother <- function( inputData, nBoot )
 {
@@ -182,8 +181,7 @@ bestBadBootBrother <- function( inputData, nBoot )
 
 system.time( test2 <- bestBadBootBrother( inputData = regData, 100000 ) )
 
-##################
-# Exteding above to any number of covars
+# Extending the above function to accept an arbitraty number of covariates
 
 parBadBootAnyCovars <- function( index, scaleData, N )
 {
@@ -231,8 +229,7 @@ bestBadBootBrotherAnyCovars1 <- function( nBoot, yDat, ... )
   return( m ) 
 }
 
-# want to change the for loop on xDat into something faster and more dynamic
-# consider the two approaches below
+# Changing the for loop on xDat into something faster and more dynamic
 
 bestBadBootBrotherAnyCovars2 <- function( nBoot, yDat, ... ) 
 {
@@ -307,7 +304,7 @@ system.time( test3 <- bestBadBootBrotherAnyCovars2( 100000, regData$y, regData$x
 system.time( test3 <- bestBadBootBrotherAnyCovars3( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
 
 
-# Compare our bootstrap to initial via microbenchmark
+# Compare our efficient bootstrap to initial via microbenchmark
 library(microbenchmark)
 microbenchmark(lmBoot(regData, 100), bestBadBootBrotherAnyCovars3( 100, regData$y, regData$x))
 
