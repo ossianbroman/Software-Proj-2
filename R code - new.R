@@ -178,6 +178,52 @@ bestBadBootBrother <- function( inputData, nBoot )
 
 system.time( test2 <- bestBadBootBrother( inputData = regData, 100000 ) )
 
+
+# Plotting of time --------------------------------------------------------
+set.seed(1435)
+plotting <- data.frame(matrix(0, nrow = 7, ncol = 2))
+
+plotting[1,1] <- "lmBoot"
+i.1 <- system.time(lmBoot(regData, nBoot = 10000))
+plotting[1,2] <- i.1[["elapsed"]]
+  
+plotting[2,1] <- "lmBoot1"
+i.2 <- system.time(lmBoot1(regData, nBoot = 10000))
+plotting[2,2] <- i.2[["elapsed"]]
+
+plotting[3,1] <- "lmBoot2"
+i.3 <- system.time(lmBoot2(regData, nBoot = 10000))
+plotting[3,2] <-  i.3[["elapsed"]]
+
+plotting[4,1] <- "bestBadBootBrother"
+i.4 <- system.time( test2 <- bestBadBootBrother( inputData = regData, 10000 ) )
+plotting[4,2] <-  i.4[["elapsed"]]
+
+plotting[5,1] <- "bestBadBootBrotherAnyCovars1"
+i.5 <- system.time( test3 <- bestBadBootBrotherAnyCovars1( 10000, regData$y, regData$x) )
+plotting[5,2] <- i.5[["elapsed"]]
+
+plotting[6,1] <- "bestBadBootBrotherAnyCovars2"
+i.6 <- system.time( test3 <- bestBadBootBrotherAnyCovars2( 10000, regData$y, regData$x) )
+plotting[6,2] <- i.6[["elapsed"]]
+
+plotting[7,1] <- "bestBadBootBrotherAnyCovars3"
+i.7 <- system.time( test3 <- bestBadBootBrotherAnyCovars3( 10000, regData$y, regData$x) )
+plotting[7,2] <- i.7[["elapsed"]]
+
+
+ggplot( data = plotting, aes( x = X1, y = X2,fill = factor( X1 ))) +
+  geom_bar( position = "dodge", stat = "identity" ) + 
+  coord_flip() +
+  scale_x_discrete(
+    limits=c( "bestBadBootBrotherAnyCovars3", "bestBadBootBrotherAnyCovars2", 
+              "bestBadBootBrotherAnyCovars1","bestBadBootBrother", "lmBoot2", 
+              "lmBoot1", "lmBoot") ) +
+  ggtitle("Time (in seconds) for the versions of the function to run 10 000 iterations") +
+  ylab("Time") + xlab("Funnction version") + theme(legend.position="none")
+
+
+
 ##################
 
 
