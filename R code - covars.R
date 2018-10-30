@@ -224,7 +224,7 @@ bestBadBootBrotherAnyCovars1 <- function( nBoot, yDat, ... )
   
   r <- bootResults[[1]]
   c <- bootResults[[2]]
-  m <- matrix( c( r, c ), ncol = 2, nrow = N )
+  m <- matrix( c( r, c ), ncol = length(xDat)+1, nrow = N )
   
   return( m ) 
 }
@@ -260,7 +260,7 @@ bestBadBootBrotherAnyCovars2 <- function( nBoot, yDat, ... )
   
   r <- bootResults[[1]]
   c <- bootResults[[2]]
-  m <- matrix( c( r, c ), ncol = 2, nrow = N )
+  m <- matrix( c( r, c ), ncol = length(xDat)+1, nrow = N )
   
   return( m ) 
 }
@@ -288,7 +288,7 @@ bestBadBootBrotherAnyCovars3 <- function( nBoot, yDat, ... )
   
   r <- bootResults[[1]]
   c <- bootResults[[2]]
-  m <- matrix( c( r, c ), ncol = 2, nrow = N )
+  m <- matrix( c( r, c ), ncol = length(xDat)+1, nrow = N )
   
   return( m ) 
 }
