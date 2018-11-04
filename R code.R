@@ -339,7 +339,7 @@ usingBootLibrary <- function( nBoot, yDat, ... )
   # tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
   #                               scaleData = scaleData, N = N ) 
   # save all bootstap data into matrix and output
-  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1)
+  m <- matrix( unlist(tempbootResults), ncol = length(xDat))
   return( m ) 
 }
 
