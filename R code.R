@@ -278,7 +278,7 @@ bestBootCovars3 <- function( nBoot, yDat, ... )
   tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
                                 scaleData = scaleData, N = N ) 
   # save all bootstap data into matrix and output
-  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1)
+  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1, byrow=T)
   
   return( m ) 
 }
@@ -307,7 +307,7 @@ oneBootToRuleThemAll <- function( nBoot, yDat, ... )
   
   return( m ) 
 }
-
+# To compare our best function, just using R's boot
 functionForUsingBoot <- function( scaleData, r)
 {
   # sample data with replacement
@@ -338,6 +338,7 @@ usingBootLibrary <- function( nBoot, yDat, ... )
   # pass scaled data to helper function to bootstrap
   tempbootResults <- boot(scaleData, functionForUsingBoot, R=nBoot)
   # save all bootstap data into matrix and output
+  # this will return just the one, instead of a list of them
   return(matrix(unlist(tempbootResults$t0), ncol=length(xDat), byrow=T))
 }
 
