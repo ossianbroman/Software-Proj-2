@@ -204,17 +204,17 @@ bestBootCovars1 <- function( nBoot, yDat, ... )
   myClust <- makeCluster(nCores-1, type = "PSOCK")
   # save x covariates into list and loop through them to constuct covariate matrix
   xDat <- list(...)
-  x <- cbind(1, scale(xDat[[1]], scale = F))
+  x <- cbind(1, xDat[[1]])
   if(length(xDat) > 1) {
     for(i in 2:length(xDat)) {
-       x <- cbind(x, scale(xDat[[i]], scale = F))
+       x <- cbind(x,xDat[[i]])
     }
   }
   
-  y <- scale( yDat, scale = F )
+  #y <- scale( yDat, scale = F )
   
   # unite x covariates and y into matrix
-  scaleData <- cbind( x, y )
+  scaleData <- cbind( x, yDat )
   
   N <- length( yDat ) 
   
@@ -222,7 +222,7 @@ bestBootCovars1 <- function( nBoot, yDat, ... )
   tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
                                 scaleData = scaleData, N = N ) 
   # save all bootstap data into matrix and output
-  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1)  
+  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1, byrow=T)  
   return( m ) 
 }
 
@@ -243,15 +243,15 @@ bestBootCovars2 <- function( nBoot, yDat, ... )
   baseone <- rep( 1 , mrow)
    
   mnew <- matrix( data = c(mdata, yDat), nrow = mrow, ncol = mcol+1)
-  mscale <- scale( mnew, scale = F )
-  scaleData <- matrix( data = c( baseone, mscale ), nrow = mrow, ncol = mcol + 2 )
+  #mscale <- scale( mnew, scale = F )
+  scaleData <- matrix( data = c( baseone, mnew ), nrow = mrow, ncol = mcol + 2 )
   
   N <- length( yDat ) 
   # pass scaled data to helper function to bootstrap
   tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
                                 scaleData = scaleData, N = N ) 
   # save all bootstap data into matrix and output 
-  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1)
+  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1, byrow=T)
   
   return( m ) 
 }
@@ -266,8 +266,9 @@ bestBootCovars3 <- function( nBoot, yDat, ... )
   
   # save x covariates into list, and turn them into a scaled matrix in one step
   xDat <- list(...)
-  x <- cbind(1, scale(do.call(cbind, xDat), scale =F ))
-  y <- scale( yDat, scale = F )
+  #x <- cbind(1, scale(do.call(cbind, xDat), scale =F ))
+  x <- cbind(1, do.call(cbind, xDat))
+  #y <- scale( yDat, scale = F )
 
   scaleData <- cbind(x, y)
   
@@ -293,7 +294,7 @@ oneBootToRuleThemAll <- function( nBoot, yDat, ... )
   # save x covariates into list
   xDat <- list(...)
   xDat[["yDat"]] <- yDat
-  # create data matrix in one step by using scale function only once
+  # create data matrix in one step
   scaleData <- cbind(1, do.call(cbind, xDat))
 
   N <- length( yDat ) 
@@ -302,7 +303,7 @@ oneBootToRuleThemAll <- function( nBoot, yDat, ... )
   tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
                                 scaleData = scaleData, N = N ) 
   # save all bootstap data into matrix and output
-  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1, byrow=T)
+  m <- matrix( unlist(tempbootResults), ncol = length(xDat), byrow=T)
   
   return( m ) 
 }
@@ -310,17 +311,16 @@ oneBootToRuleThemAll <- function( nBoot, yDat, ... )
 functionForUsingBoot <- function( scaleData, r)
 {
   # sample data with replacement
-  scaleData <- scaleData[r,]
+  bootData <- matrix(unlist(scaleData[r,]), ncol=ncol(scaleData))
   #bootData <- scaleData[sample( 1:N, N, replace = T ),]
-  Xmat <- scaleData[,1:(ncol(scaleData)-1)]
-  Ymat <- scaleData[,ncol(scaleData)]
-  
+  Xmat <- bootData[,1:(ncol(scaleData)-1)]
+  Ymat <- bootData[,ncol(scaleData)]
   # fit the model under this alternative reality
   # Changed the lm part to matrix form
   beta <- solve( t( Xmat ) %*% Xmat ) %*% t( Xmat ) %*% Ymat
   return(beta)
 }
-
+library(boot)
 usingBootLibrary <- function( nBoot, yDat, ... ) 
 {
   # parallelize
@@ -329,18 +329,16 @@ usingBootLibrary <- function( nBoot, yDat, ... )
   myClust <- makeCluster(nCores-1, type = "PSOCK")
   
   # save x covariates into list
-  xDat <- list(...)
-  # create data matrix in one step by using scale function only once
-  scaleData <- cbind(1, scale(do.call(cbind, xDat, yDat), scale =F ))
+  xDat <- list(..., yDat)
+  #xDat[["yDat"]] <- yDat
+  # create data matrix in one step
+  scaleData <- cbind(1, do.call(cbind, xDat))
   
   N <- length( yDat ) 
   # pass scaled data to helper function to bootstrap
   tempbootResults <- boot(scaleData, functionForUsingBoot, R=nBoot)
-  # tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
-  #                               scaleData = scaleData, N = N ) 
   # save all bootstap data into matrix and output
-  m <- matrix( unlist(tempbootResults), ncol = length(xDat))
-  return( m ) 
+  return(matrix(unlist(tempbootResults$t0), ncol=length(xDat), byrow=T))
 }
 
 ## In all functions above, we return a matrix, where the first column is the intercept
@@ -352,15 +350,16 @@ system.time( test3 <- bestBootCovars1( 100000, regData$y, regData$x) )
 system.time( test4 <- bestBootCovars2( 100000, regData$y, regData$x) )
 system.time( test5 <- bestBootCovars3( 100000, regData$y, regData$x) )
 system.time( test6 <- oneBootToRuleThemAll( 100000, regData$y, regData$x) )
+system.time( test7 <- usingBootLibrary( 100000, regData$y, regData$x) )
 
 # works for factors
-system.time( test7 <- oneBootToRuleThemAll( 100000, fitness$Oxygen, as.factor(fitness$Age)) )
+system.time( test8 <- oneBootToRuleThemAll( 100000, fitness$Oxygen, as.factor(fitness$Age)) )
 # works for interaction terms
-system.time( test8 <- oneBootToRuleThemAll( 100000, fitness$Oxygen, fitness$Age, fitness$Weight, fitness$Age*fitness$Weight) )
+system.time( test9 <- oneBootToRuleThemAll( 100000, fitness$Oxygen, fitness$Age, fitness$Weight, fitness$Age*fitness$Weight) )
 
-system.time( test9 <- bestBootCovars1( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
-system.time( test10 <- bestBootCovars2( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
-system.time( test11 <- oneBootToRuleThemAll( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
+system.time( test10 <- bestBootCovars1( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
+system.time( test11 <- bestBootCovars2( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
+system.time( test12 <- oneBootToRuleThemAll( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
 
 
 # Compare our efficient bootstrap to initial via microbenchmark
