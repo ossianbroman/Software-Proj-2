@@ -72,7 +72,7 @@ run;
 	/* sasfile &Dataset load; */
 
 	proc surveyselect data = &DataSet out = bootData2
-		seed = 180029290
+		seed = -180029290
 		method = urs
 		noprint 
 		samprate = 100
@@ -111,7 +111,7 @@ run;
 	sasfile &Dataset load; 
 
 	proc surveyselect data = &DataSet out = bootData3
-		seed = 180029290
+		seed = -180029290
 		method = urs
 		noprint 
 		samprate = 100
