@@ -58,7 +58,7 @@ detectCores()
 nCores <- detectCores()
 nCores
 
-myClust <- makeCluster(nCores-1, type = "FORK")
+myClust <- makeCluster(nCores-1, type = "PSOCK")
 
 clusterEvalQ(myClust, library(boot))
 
@@ -157,7 +157,7 @@ bestBadBootBrother <- function( inputData, nBoot )
   # parallelize
   library(parallel)
   nCores <- detectCores()
-  myClust <- makeCluster(nCores-1, type = "FORK")
+  myClust <- makeCluster(nCores-1, type = "PSOCK")
   # scale inputData and pass to helper function in form of a matrix
   x <- cbind( 1, scale( inputData$x, scale = F ) )
   y <- scale( inputData$y, scale = F )
@@ -201,7 +201,7 @@ bestBootCovars1 <- function( nBoot, yDat, ... )
   # parallelize
   library(parallel)
   nCores <- detectCores()
-  myClust <- makeCluster(nCores-1, type = "FORK")
+  myClust <- makeCluster(nCores-1, type = "PSOCK")
   # save x covariates into list and loop through them to constuct covariate matrix
   xDat <- list(...)
   x <- cbind(1, scale(xDat[[1]], scale = F))
@@ -232,7 +232,7 @@ bestBootCovars2 <- function( nBoot, yDat, ... )
   # parallelize
   library(parallel)
   nCores <- detectCores()
-  myClust <- makeCluster(nCores-1, type = "FORK")
+  myClust <- makeCluster(nCores-1, type = "PSOCK")
   # save x covariates into list
   xDat <- list(...)
   # create matrix with x covariates and y and scale it
@@ -262,7 +262,7 @@ bestBootCovars3 <- function( nBoot, yDat, ... )
   # parallelize
   library(parallel)
   nCores <- detectCores()
-  myClust <- makeCluster(nCores-1, type = "FORK")
+  myClust <- makeCluster(nCores-1, type = "PSOCK")
   
   # save x covariates into list, and turn them into a scaled matrix in one step
   xDat <- list(...)
@@ -288,7 +288,7 @@ oneBootToRuleThemAll <- function( nBoot, yDat, ... )
   # parallelize
   library(parallel)
   nCores <- detectCores()
-  myClust <- makeCluster(nCores-1, type = "FORK")
+  myClust <- makeCluster(nCores-1, type = "PSOCK")
   
   # save x covariates into list
   xDat <- list(...)
@@ -326,7 +326,7 @@ usingBootLibrary <- function( nBoot, yDat, ... )
   # parallelize
   library(parallel)
   nCores <- detectCores()
-  myClust <- makeCluster(nCores-1, type = "FORK")
+  myClust <- makeCluster(nCores-1, type = "PSOCK")
   
   # save x covariates into list
   xDat <- list(...)
