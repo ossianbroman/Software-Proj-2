@@ -292,8 +292,9 @@ oneBootToRuleThemAll <- function( nBoot, yDat, ... )
   
   # save x covariates into list
   xDat <- list(...)
+  xDat[["yDat"]] <- yDat
   # create data matrix in one step by using scale function only once
-  scaleData <- cbind(1, scale(do.call(cbind, xDat, yDat), scale =F ))
+  scaleData <- cbind(1, do.call(cbind, xDat))
 
   N <- length( yDat ) 
   
@@ -301,7 +302,7 @@ oneBootToRuleThemAll <- function( nBoot, yDat, ... )
   tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
                                 scaleData = scaleData, N = N ) 
   # save all bootstap data into matrix and output
-  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1)
+  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1, byrow=T)
   
   return( m ) 
 }
