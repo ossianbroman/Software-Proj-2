@@ -188,7 +188,6 @@ parBootAnyCovars <- function( index, scaleData, N )
   bootData <- scaleData[sample( 1:N, N, replace = T ),]
   Xmat <- bootData[,1:(ncol(bootData)-1)]
   Ymat <- bootData[,ncol(bootData)]
-  
   # fit the model under this alternative reality
   # Changed the lm part to matrix form
   beta <- solve( t( Xmat ) %*% Xmat ) %*% t( Xmat ) %*% Ymat
@@ -295,7 +294,6 @@ oneBootToRuleThemAll <- function( nBoot, yDat, ... )
   xDat <- list(..., yDat)
   # create data matrix in one step
   scaleData <- cbind(1, do.call(cbind, xDat))
-
   N <- length( yDat ) 
   
   # pass scaled data to helper function to bootstrap
@@ -328,8 +326,8 @@ usingBootLibrary <- function( nBoot, yDat, ... )
   myClust <- makeCluster(nCores-1, type = "PSOCK")
   
   # save x covariates into list
-  xDat <- list(..., yDat)
-  #xDat[["yDat"]] <- yDat
+  xDat <- list(...)
+  xDat[["yDat"]] <- yDat
   # create data matrix in one step
   scaleData <- cbind(1, do.call(cbind, xDat))
   
