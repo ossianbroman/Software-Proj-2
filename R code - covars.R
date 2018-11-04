@@ -222,7 +222,7 @@ bestBootCovars1 <- function( nBoot, yDat, ... )
   tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
                                 scaleData = scaleData, N = N ) 
   # save all bootstap data into matrix and output
-  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1, nrow = N )  
+  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1)  
   return( m ) 
 }
 
@@ -251,7 +251,7 @@ bestBootCovars2 <- function( nBoot, yDat, ... )
   tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
                                 scaleData = scaleData, N = N ) 
   # save all bootstap data into matrix and output 
-  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1, nrow = N )
+  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1)
   
   return( m ) 
 }
@@ -277,7 +277,7 @@ bestBootCovars3 <- function( nBoot, yDat, ... )
   tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
                                 scaleData = scaleData, N = N ) 
   # save all bootstap data into matrix and output
-  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1, nrow = N )
+  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1)
   
   return( m ) 
 }
@@ -301,7 +301,7 @@ oneBootToRuleThemAll <- function( nBoot, yDat, ... )
   tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
                                 scaleData = scaleData, N = N ) 
   # save all bootstap data into matrix and output
-  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1, nrow = N )
+  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1)
   
   return( m ) 
 }
@@ -338,7 +338,7 @@ usingBootLibrary <- function( nBoot, yDat, ... )
   # tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
   #                               scaleData = scaleData, N = N ) 
   # save all bootstap data into matrix and output
-  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1, nrow = N )
+  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1)
   return( m ) 
 }
 
@@ -364,6 +364,47 @@ system.time( test11 <- oneBootToRuleThemAll( 100000, regData$y, regData$x, sampl
 
 # Compare our efficient bootstrap to initial via microbenchmark
 library(microbenchmark)
-m <- summary(microbenchmark(bestBootCovars1( 10000, regData$y, regData$x),
-               bestBootCovars2( 10000, regData$y, regData$x), bestBootCovars3( 10000, regData$y, regData$x),
-               usingBootLibrary(10000, regData$y, regData$x), oneBootToRuleThemAll( 10000, regData$y, regData$x)))
+m <- summary(microbenchmark(lmBoot(regData, 1000), bestBootCovars1( 1000, regData$y, regData$x),
+               bestBootCovars2( 1000, regData$y, regData$x), bestBootCovars3( 1000, regData$y, regData$x),
+               usingBootLibrary( 1000, regData$y, regData$x), oneBootToRuleThemAll( 1000, regData$y, regData$x)))
+
+#Plot it
+m.df <- data.frame(m)
+plotting <- data.frame(matrix(0, 6, 2))
+plotting[, 2] <- m.df[["mean"]]
+plotting[1,1] <- "lmBoot"
+plotting[2,1] <- "bestBootCovars1"
+plotting[3,1] <- "bestBootCovars2"
+plotting[4,1] <- "bestBootCovars3"
+plotting[5,1] <- "usingBootLibrary"
+plotting[6,1] <- "oneBootToRuleThemAll"
+
+minplotting <- data.frame(matrix(0, 6, 2))
+minplotting[, 2] <- m.df[["lq"]]
+minplotting[1,1] <- "lmBoot"
+minplotting[2,1] <- "bestBootCovars1"
+minplotting[3,1] <- "bestBootCovars2"
+minplotting[4,1] <- "bestBootCovars3"
+minplotting[5,1] <- "usingBootLibrary"
+minplotting[6,1] <- "oneBootToRuleThemAll"
+
+maxplotting <- data.frame(matrix(0, 6, 2))
+maxplotting[, 2] <- m.df[["uq"]]
+maxplotting[1,1] <- "lmBoot"
+maxplotting[2,1] <- "bestBootCovars1"
+maxplotting[3,1] <- "bestBootCovars2"
+maxplotting[4,1] <- "bestBootCovars3"
+maxplotting[5,1] <- "usingBootLibrary"
+maxplotting[6,1] <- "oneBootToRuleThemAll"
+
+ggplot( data = plotting, aes( x = X1, y = X2, fill = factor( X1 ))) +
+  geom_bar( position = "dodge", stat = "identity" ) + 
+  coord_flip() +
+  scale_x_discrete(
+    limits=c( "oneBootToRuleThemAll", 
+              "usingBootLibrary","bestBootCovars3", "bestBootCovars2", 
+              "bestBootCovars1", "lmBoot")) +
+  ggtitle("Average time (in milliseconds) to run 1000 resampling iterations") +
+  ylab("Time (ms)") + xlab("Function version") + theme(legend.position="none") 
+
+
