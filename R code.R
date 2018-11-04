@@ -292,8 +292,7 @@ oneBootToRuleThemAll <- function( nBoot, yDat, ... )
   myClust <- makeCluster(nCores-1, type = "PSOCK")
   
   # save x covariates into list
-  xDat <- list(...)
-  xDat[["yDat"]] <- yDat
+  xDat <- list(..., yDat)
   # create data matrix in one step
   scaleData <- cbind(1, do.call(cbind, xDat))
 
