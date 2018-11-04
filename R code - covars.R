@@ -316,9 +316,15 @@ system.time( test4 <- bestBootCovars2( 100000, regData$y, regData$x) )
 system.time( test5 <- bestBootCovars3( 100000, regData$y, regData$x) )
 system.time( test6 <- oneBootToRuleThemAll( 100000, regData$y, regData$x) )
 
-system.time( test7 <- bestBootCovars1( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
-system.time( test8 <- bestBootCovars2( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
-system.time( test9 <- oneBootToRuleThemAll( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
+# works for factors
+system.time( test7 <- oneBootToRuleThemAll( 100000, fitness$Oxygen, as.factor(fitness$Age)) )
+# works for interaction terms
+system.time( test8 <- oneBootToRuleThemAll( 100000, fitness$Oxygen, fitness$Age, fitness$Weight, fitness$Age*fitness$Weight) )
+
+
+system.time( test9 <- bestBootCovars1( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
+system.time( test10 <- bestBootCovars2( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
+system.time( test11 <- oneBootToRuleThemAll( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
 
 
 # Compare our efficient bootstrap to initial via microbenchmark
