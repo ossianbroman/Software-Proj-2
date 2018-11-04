@@ -306,6 +306,42 @@ oneBootToRuleThemAll <- function( nBoot, yDat, ... )
   return( m ) 
 }
 
+functionForUsingBoot <- function( scaleData, r)
+{
+  # sample data with replacement
+  scaleData <- scaleData[r,]
+  #bootData <- scaleData[sample( 1:N, N, replace = T ),]
+  Xmat <- scaleData[,1:(ncol(scaleData)-1)]
+  Ymat <- scaleData[,ncol(scaleData)]
+  
+  # fit the model under this alternative reality
+  # Changed the lm part to matrix form
+  beta <- solve( t( Xmat ) %*% Xmat ) %*% t( Xmat ) %*% Ymat
+  return(beta)
+}
+
+usingBootLibrary <- function( nBoot, yDat, ... ) 
+{
+  # parallelize
+  library(parallel)
+  nCores <- detectCores()
+  myClust <- makeCluster(nCores-1, type = "FORK")
+  
+  # save x covariates into list
+  xDat <- list(...)
+  # create data matrix in one step by using scale function only once
+  scaleData <- cbind(1, scale(do.call(cbind, xDat, yDat), scale =F ))
+  
+  N <- length( yDat ) 
+  # pass scaled data to helper function to bootstrap
+  tempbootResults <- boot(scaleData, functionForUsingBoot, R=nBoot)
+  # tempbootResults <- parLapply( myClust, 1:nBoot, parBootAnyCovars, 
+  #                               scaleData = scaleData, N = N ) 
+  # save all bootstap data into matrix and output
+  m <- matrix( unlist(tempbootResults), ncol = length(xDat)+1, nrow = N )
+  return( m ) 
+}
+
 ## In all functions above, we return a matrix, where the first column is the intercept
 ## and the rest of the columns are best estimate for each covar (in slope terms)
 ## To have final bootstrap results, take column means and calculate 95% CI.
@@ -321,7 +357,6 @@ system.time( test7 <- oneBootToRuleThemAll( 100000, fitness$Oxygen, as.factor(fi
 # works for interaction terms
 system.time( test8 <- oneBootToRuleThemAll( 100000, fitness$Oxygen, fitness$Age, fitness$Weight, fitness$Age*fitness$Weight) )
 
-
 system.time( test9 <- bestBootCovars1( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
 system.time( test10 <- bestBootCovars2( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
 system.time( test11 <- oneBootToRuleThemAll( 100000, regData$y, regData$x, sampleData$Weight, sampleData$RestPulse, sampleData$RunPulse, sampleData$MaxPulse) )
@@ -329,19 +364,6 @@ system.time( test11 <- oneBootToRuleThemAll( 100000, regData$y, regData$x, sampl
 
 # Compare our efficient bootstrap to initial via microbenchmark
 library(microbenchmark)
-microbenchmark(lmBoot(regData, 100), bestBootCovars1( 100, regData$y, regData$x), oneBootToRuleThemAll( 100, regData$y, regData$x))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+m <- summary(microbenchmark(bestBootCovars1( 10000, regData$y, regData$x),
+               bestBootCovars2( 10000, regData$y, regData$x), bestBootCovars3( 10000, regData$y, regData$x),
+               usingBootLibrary(10000, regData$y, regData$x), oneBootToRuleThemAll( 10000, regData$y, regData$x)))
